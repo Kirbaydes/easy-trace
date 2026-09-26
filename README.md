@@ -79,6 +79,8 @@ src/types.ts       общие типы сообщений между поток�
 Easy Trace распространяется под **GNU General Public License, версия 2 или новее** — полный текст в
 [LICENSE](LICENSE), перечень компонентов в [NOTICE](NOTICE).
 
+Исходники: https://github.com/Kirbaydes/easy-trace
+
 Это не выбор из идейных соображений, а требование: плагин собран на
 [potrace](https://potrace.sourceforge.net/) (© Peter Selinger) через
 [esm-potrace-wasm](https://github.com/tomayac/esm-potrace-wasm), а тот под GPL-2.0. Производная

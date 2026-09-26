@@ -44,7 +44,7 @@ const banner = {
   js:
     '/* Easy Trace — Copyright (C) 2026 Kirill Baydakov. GPL-2.0-or-later.\n' +
     ' * Bundles Potrace (C) Peter Selinger and ImageTracer.js (Unlicense).\n' +
-    ' * Source: see the LICENSE and NOTICE files shipped with this plugin. */',
+    ' * Source: https://github.com/Kirbaydes/easy-trace */',
 }
 
 const common = { bundle: true, target: 'es2020', logLevel: 'info', banner }
