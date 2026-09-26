@@ -1,12 +1,17 @@
 {
   "name": "Easy Trace",
+  "id": "1685609626972281147",
   "api": "1.0.0",
   "main": "dist/code.js",
   "ui": "dist/ui.html",
-  "editorType": ["figma"],
+  "editorType": [
+    "figma"
+  ],
   "documentAccess": "dynamic-page",
   "networkAccess": {
-    "allowedDomains": ["none"],
+    "allowedDomains": [
+      "none"
+    ],
     "reasoning": "Easy Trace runs entirely offline: tracing happens inside the plugin, nothing is sent anywhere."
   }
 }
