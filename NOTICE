@@ -1,0 +1,38 @@
+Easy Trace
+Copyright (C) 2026 Kirill Baydakov
+
+This program is free software: you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free Software
+Foundation, either version 2 of the License, or (at your option) any later
+version. See the LICENSE file for the full text.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+PARTICULAR PURPOSE. See the GNU General Public License for more details.
+
+
+THIRD-PARTY COMPONENTS
+======================
+
+Potrace — via esm-potrace-wasm
+    Copyright (C) 2001-2019 Peter Selinger
+    https://potrace.sourceforge.net/
+    Licensed under the GNU General Public License, version 2 or later.
+
+    Easy Trace bundles Potrace compiled to WebAssembly through
+    esm-potrace-wasm (https://github.com/tomayac/esm-potrace-wasm), which is
+    itself distributed under GPL-2.0. This is why Easy Trace as a whole is
+    released under the GPL: a derivative work of Potrace can only be
+    distributed under those terms.
+
+    "Potrace" is a trademark of Peter Selinger. Easy Trace is an independent
+    plugin that uses Potrace; it is not affiliated with or endorsed by its
+    author.
+
+ImageTracer.js
+    Copyright (C) 2018 András Jankovics
+    https://github.com/jankovicsandras/imagetracerjs
+    Released into the public domain under the Unlicense.
+
+    Used only as a fallback tracer for the case where WebAssembly is
+    unavailable in the plugin sandbox.

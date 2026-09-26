@@ -1,0 +1,357 @@
+<!--
+  Easy Trace — trace images into editable vector silhouettes inside Figma.
+  Copyright (C) 2026 Kirill Baydakov
+  Free software under the GNU General Public License, version 2 or later.
+  Bundles Potrace, Copyright (C) Peter Selinger. See LICENSE and NOTICE.
+-->
+<div id="app">
+  <header class="head">
+    <div class="head__brand"><span class="head__dot"></span>Easy Trace</div>
+    <div class="head__right">
+      <div class="head__count" id="count" hidden></div>
+      <div class="lang" id="lang">
+        <button type="button" data-value="en" class="lang__btn is-active">EN</button>
+        <button type="button" data-value="ru" class="lang__btn">RU</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="scroll" id="scroll">
+    <section class="card card--empty" id="empty">
+      <div class="empty__icon">◍</div>
+      <div class="empty__title" id="emptyTitle">Nothing selected</div>
+      <div class="empty__text" id="emptyText">
+        Select a layer that is filled with an image — Easy Trace turns it into editable vectors.
+      </div>
+    </section>
+
+    <section class="card" id="sourceBlock" hidden>
+      <div class="card__title" data-i18n="source">Source</div>
+      <div class="source">
+        <div class="source__thumb" id="sourceThumb"></div>
+        <div class="source__body">
+          <div class="source__name" id="sourceName"></div>
+          <div class="source__size" id="sourceSize"></div>
+        </div>
+      </div>
+      <div class="note" id="extraNote" hidden></div>
+    </section>
+
+    <section class="card" id="previewBlock" hidden>
+      <div class="card__head">
+        <div class="card__title" data-i18n="result">Result</div>
+        <div class="seg seg--mini" id="view">
+          <button type="button" data-value="traced" class="seg__btn is-active" data-i18n="viewTraced">Traced</button>
+          <button type="button" data-value="original" class="seg__btn" data-i18n="viewOriginal">Original</button>
+        </div>
+      </div>
+      <div class="preview" id="preview"><span class="preview__empty" id="previewEmpty">—</span></div>
+      <div class="note" id="previewNote"></div>
+    </section>
+
+    <section class="card" id="settingsBlock" hidden>
+      <div class="card__title" data-i18n="tracing">Tracing</div>
+      <div class="fields">
+        <label class="row">
+          <span class="row__label"><span data-i18n="threshold">Threshold</span> <b id="thresholdValue">128</b></span>
+          <input type="range" id="threshold" min="10" max="245" step="5" value="128" />
+        </label>
+        <label class="row row--check">
+          <span class="row__label" data-i18n="invert">Invert</span>
+          <input type="checkbox" id="invert" />
+        </label>
+        <label class="row row--check">
+          <span class="row__label" data-i18n="removeBg">Transparent background</span>
+          <input type="checkbox" id="removeBg" checked />
+        </label>
+      </div>
+    </section>
+
+    <section class="card card--diag" id="diagCard" hidden>
+      <details id="diagBlock">
+        <summary class="diag__summary" data-i18n="diagnostics">Diagnostics</summary>
+        <pre class="diag__log" id="log"></pre>
+        <button class="linkbtn" id="copyLog" type="button" data-i18n="copyLog">Copy log</button>
+      </details>
+    </section>
+  </div>
+
+  <footer class="foot">
+    <div class="error" id="error" hidden></div>
+    <div class="actions">
+      <button class="primary" id="insertBtn" type="button" disabled>Add vectors</button>
+    </div>
+  </footer>
+</div>
+
+<style>
+  :root {
+    --accent: #1476ff;
+    --accent-strong: #0b5ed7;
+    --accent-soft: rgba(20, 118, 255, .1);
+
+    --bg: #f3f3f6;
+    --surface: #ffffff;
+    --surface-2: #f1f1f5;
+    --surface-3: #e4e4ea;
+    --text: #16161a;
+    --text-2: #5f5f6b;
+    --text-3: #9292a0;
+    --danger: #c62f28;
+    --danger-bg: #fdecea;
+
+    --radius: 18px;
+    --radius-md: 12px;
+    --radius-sm: 9px;
+  }
+
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    font: 11px/1.45 Inter, "SF Pro Text", -apple-system, system-ui, sans-serif;
+    color: var(--text);
+    background: var(--bg);
+    -webkit-font-smoothing: antialiased;
+  }
+  #app { display: flex; flex-direction: column; height: 100vh; }
+
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-thumb {
+    background: #d2d2da; border-radius: 6px;
+    border: 3px solid var(--bg); background-clip: padding-box;
+  }
+  ::-webkit-scrollbar-thumb:hover { background: #bcbcc6; background-clip: padding-box; }
+  ::-webkit-scrollbar-track { background: transparent; }
+
+  /* ---------- шапка ---------- */
+  .head {
+    flex: 0 0 auto;
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    padding: 13px 14px 9px;
+  }
+  .head__brand {
+    display: flex; align-items: center; gap: 7px;
+    font-size: 13px; font-weight: 650; letter-spacing: -0.015em;
+  }
+  .head__dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--accent);
+  }
+  .head__right { display: flex; align-items: center; gap: 8px; }
+  .head__count {
+    padding: 3px 9px; border-radius: 20px;
+    background: var(--accent-soft); color: var(--accent-strong);
+    font-weight: 600; font-variant-numeric: tabular-nums;
+  }
+  .lang {
+    display: flex; gap: 2px; padding: 2px; border-radius: 9px;
+    background: var(--surface-3);
+  }
+  .lang__btn {
+    border: 0; padding: 0 7px; height: 20px; border-radius: 7px; cursor: pointer;
+    font: inherit; font-size: 10px; font-weight: 600; letter-spacing: .03em;
+    background: transparent; color: var(--text-3);
+  }
+  .lang__btn:hover:not(.is-active) { color: var(--text-2); }
+  .lang__btn.is-active {
+    background: var(--surface); color: var(--accent-strong);
+  }
+
+  /* ---------- блоки ---------- */
+  .scroll {
+    flex: 1 1 auto; overflow-y: auto;
+    padding: 3px 12px 12px;
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .card {
+    background: var(--surface);
+    border-radius: var(--radius);
+    padding: 14px;
+  }
+  .card--diag { padding: 12px 14px; }
+  .card__head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .card__title {
+    font-size: 11px; font-weight: 650; letter-spacing: .03em; text-transform: uppercase;
+    color: var(--text-3);
+  }
+  .card > .card__title { margin-bottom: 11px; }
+  .card__head + .pages { margin-top: 11px; }
+
+  .note { margin-top: 9px; color: var(--text-3); }
+
+  .linkbtn {
+    border: 0; background: none; padding: 0; cursor: pointer; font: inherit;
+    color: var(--accent-strong); font-weight: 550;
+  }
+  .linkbtn:hover { color: var(--accent); }
+
+  .card--empty { text-align: center; padding: 36px 22px; }
+  .empty__icon { font-size: 20px; color: var(--accent); margin-bottom: 10px; }
+  .empty__title { font-weight: 650; font-size: 12px; margin-bottom: 5px; }
+  .empty__text { color: var(--text-3); }
+
+  /* ---------- поля ---------- */
+  .fields { display: flex; flex-direction: column; gap: 8px; }
+  .fields:not(:first-child) { margin-top: 11px; }
+  .row { display: flex; align-items: center; gap: 10px; min-height: 30px; }
+  .row--check { cursor: pointer; }
+  .row__label { flex: 0 0 100px; color: var(--text-2); }
+  .row--check .row__label { flex: 1 1 auto; color: var(--text); }
+  .row__label b { color: var(--accent-strong); font-variant-numeric: tabular-nums; font-weight: 600; }
+
+  .select, .input {
+    flex: 1 1 auto; min-width: 0; height: 30px; padding: 0 10px; font: inherit;
+    color: var(--text); background: var(--surface-2);
+    border: 0; border-radius: var(--radius-sm);
+    appearance: none;
+  }
+  .select {
+    padding-right: 24px; cursor: pointer;
+    background-image: linear-gradient(45deg, transparent 50%, var(--text-2) 50%),
+                      linear-gradient(135deg, var(--text-2) 50%, transparent 50%);
+    background-position: calc(100% - 14px) 13px, calc(100% - 10px) 13px;
+    background-size: 4px 4px, 4px 4px;
+    background-repeat: no-repeat;
+  }
+  .select:hover, .input:hover { background-color: var(--surface-3); }
+  .select:focus, .input:focus {
+    outline: none; background-color: var(--surface);
+    box-shadow: 0 0 0 2px var(--accent);
+  }
+  .input--num { flex: 0 0 72px; }
+  input[type="range"] {
+    flex: 1 1 auto; min-width: 0; height: 18px; appearance: none; background: none; cursor: pointer;
+  }
+  input[type="range"]::-webkit-slider-runnable-track {
+    height: 4px; border-radius: 2px; background: var(--surface-3);
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    appearance: none; width: 13px; height: 13px; margin-top: -4.5px;
+    border-radius: 50%; background: var(--accent); border: 0;
+  }
+  input[type="checkbox"] {
+    appearance: none; flex: 0 0 auto; width: 32px; height: 18px; border-radius: 20px;
+    background: #d5d5de; border: 0; cursor: pointer; position: relative;
+    transition: background .15s;
+  }
+  input[type="checkbox"]::after {
+    content: ""; position: absolute; top: 2px; left: 2px;
+    width: 14px; height: 14px; border-radius: 50%; background: #fff;
+    transition: transform .15s;
+  }
+  input[type="checkbox"]:checked { background: var(--accent); }
+  input[type="checkbox"]:checked::after { transform: translateX(14px); }
+
+  .filename { display: flex; align-items: center; gap: 8px; }
+  .filename__ext { color: var(--text-3); flex: 0 0 auto; }
+
+  /* ---------- сегменты ---------- */
+  .seg {
+    display: flex; gap: 3px; padding: 3px; border-radius: var(--radius-md);
+    background: var(--surface-2);
+  }
+  .seg__btn {
+    flex: 1 1 0; height: 28px; border: 0; border-radius: var(--radius-sm); cursor: pointer; font: inherit;
+    background: transparent; color: var(--text-2); transition: background .12s, color .12s;
+  }
+  .seg__btn:hover:not(.is-active) { color: var(--text); }
+  .seg__btn.is-active {
+    background: var(--accent); color: #fff; font-weight: 600;
+  }
+
+  /* ---------- диагностика ---------- */
+  .diag__summary {
+    cursor: pointer; color: var(--text-2); user-select: none; list-style: none;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .diag__summary::-webkit-details-marker { display: none; }
+  .diag__summary::before {
+    content: "›"; display: inline-block; color: var(--text-3);
+    transition: transform .15s; font-size: 13px; line-height: 1;
+  }
+  details[open] .diag__summary::before { transform: rotate(90deg); }
+  .diag__summary:hover { color: var(--text); }
+  .diag__log {
+    margin: 10px 0 8px; padding: 10px; max-height: 190px; overflow: auto;
+    font: 10px/1.55 "SF Mono", ui-monospace, Menlo, monospace;
+    white-space: pre-wrap; word-break: break-word;
+    background: var(--surface-2); color: var(--text-2);
+    border-radius: var(--radius-md);
+  }
+
+  /* ---------- подвал ---------- */
+  .foot { flex: 0 0 auto; padding: 8px 12px 12px; background: var(--bg); position: relative; }
+  /* мягко гасим карточку, уезжающую под подвал */
+  .foot::before {
+    content: ""; position: absolute; left: 0; right: 0; top: -16px; height: 16px;
+    background: linear-gradient(to top, var(--bg), rgba(243, 243, 246, 0));
+    pointer-events: none;
+  }
+  .actions { display: flex; gap: 8px; }
+  .primary {
+    flex: 1 1 auto; height: 46px; border: 0; border-radius: 14px; cursor: pointer;
+    font: inherit; font-size: 13px; font-weight: 650; letter-spacing: -0.01em;
+    background: var(--accent); color: #fff;
+    transition: background .12s, transform .06s;
+  }
+  .primary:hover:not(:disabled) { background: var(--accent-strong); }
+  .primary:active:not(:disabled) { transform: translateY(1px); }
+  .primary:disabled { background: var(--surface-3); color: var(--text-3); cursor: default; }
+  .ghost {
+    flex: 0 0 auto; height: 46px; padding: 0 18px; border-radius: 14px; cursor: pointer; font: inherit;
+    font-weight: 550; background: var(--surface); color: var(--text-2); border: 0;
+  }
+  .ghost:hover { color: var(--text); }
+
+  .progress { margin-bottom: 10px; }
+  .progress__bar { height: 4px; border-radius: 3px; overflow: hidden; background: var(--surface-3); }
+  .progress__bar i {
+    display: block; height: 100%; width: 0; border-radius: 3px;
+    background: var(--accent);
+    transition: width .15s;
+  }
+  .progress__label { margin-top: 6px; color: var(--text-3); }
+  .error {
+    margin-bottom: 10px; padding: 8px 10px; border-radius: var(--radius-md);
+    background: var(--danger-bg); color: var(--danger);
+  }
+
+  /* ---------- исходник ---------- */
+  .source { display: flex; align-items: center; gap: 10px; }
+  .source__thumb {
+    flex: 0 0 56px; width: 56px; height: 44px; border-radius: var(--radius-sm); overflow: hidden;
+    background: var(--surface-2); display: flex; align-items: center; justify-content: center;
+  }
+  .source__thumb img { max-width: 100%; max-height: 100%; display: block; }
+  .source__body { flex: 1 1 auto; min-width: 0; }
+  .source__name {
+    font-weight: 550; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer;
+  }
+  .source__name:hover { color: var(--accent-strong); }
+  .source__size { color: var(--text-3); font-variant-numeric: tabular-nums; margin-top: 1px; }
+
+  /* ---------- превью ---------- */
+  .preview {
+    margin-top: 11px; height: 168px; border-radius: var(--radius-md); overflow: hidden;
+    display: flex; align-items: center; justify-content: center;
+    background-color: var(--surface-2);
+    background-image:
+      linear-gradient(45deg, #e5e5eb 25%, transparent 25%),
+      linear-gradient(-45deg, #e5e5eb 25%, transparent 25%),
+      linear-gradient(45deg, transparent 75%, #e5e5eb 75%),
+      linear-gradient(-45deg, transparent 75%, #e5e5eb 75%);
+    background-size: 14px 14px;
+    background-position: 0 0, 0 7px, 7px -7px, -7px 0;
+  }
+  .preview img { max-width: 100%; max-height: 100%; display: block; }
+  .preview.is-busy { opacity: .45; transition: opacity .12s; }
+  .preview__empty { color: var(--text-3); }
+
+  .seg--mini { padding: 2px; border-radius: 9px; }
+  .seg--mini .seg__btn { height: 20px; font-size: 10px; border-radius: 7px; padding: 0 8px; flex: 0 0 auto; }
+  .seg--inline { flex: 1 1 auto; min-width: 0; }
+</style>
+
+<script>/*__JS__*/</script>
